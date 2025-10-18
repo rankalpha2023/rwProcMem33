@@ -70,10 +70,14 @@ static int ret_ptrace_handler(struct kretprobe_instance *ri, struct pt_regs *reg
     }
     
     // Check if the buffer of the IoV is readable and writable
-    if (!access_ok((void __user *)data->iov.iov_base, data->iov.iov_len)) {
-        printk_debug(KERN_INFO "User buffer is not accessible\n");
+    if (!access_ok(VERIFY_READ, (void __user *)data->iov.iov_base, data->iov.iov_len)) {
+        printk_debug(KERN_INFO "User buffer is not read\n");
         return 0;
     }
+    if (!access_ok(VERIFY_WRITE, (void __user *)data->iov.iov_base, data->iov.iov_len)) {
+        printk_debug(KERN_INFO "User buffer is not write\n");
+        return 0;
+    }    
     copy_size = min(data->iov.iov_len, sizeof(struct user_hwdebug_state));
     if (x_copy_from_user(&old_hw_state, (void __user *)data->iov.iov_base, copy_size) != 0) {
         printk_debug(KERN_INFO "Failed to copy old_hw_state from user buffer\n");

@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
 	usleep(1000*250);
 
 	CHwBreakpointMgr driver;
+	/**/
 	//驱动默认隐蔽通信密匙
 	std::string procNodeAuthKey = "dce3771681d4c7a143d5d06b7d32548e";
 	if (argc > 1) {
@@ -122,6 +123,7 @@ int main(int argc, char *argv[]) {
 		fflush(stdout);
 		return 0;
 	}
+	/**/
 
 	//获取CPU支持硬件执行和访问断点的数量
 	printf("Call GetNumBRPS() return:%d\n", driver.GetNumBRPS());

