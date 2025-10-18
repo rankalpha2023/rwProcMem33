@@ -2,7 +2,7 @@
 #define _HIDE_PROCFS_DIR_H_
 
 #include "ver_control.h"
-
+#include "kprint.h"
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/kprobes.h>

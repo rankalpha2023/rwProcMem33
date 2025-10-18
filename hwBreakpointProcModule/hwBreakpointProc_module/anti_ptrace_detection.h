@@ -42,18 +42,18 @@ static int entry_ptrace_handler(struct kretprobe_instance *ri, struct pt_regs *r
     struct hook_ptrace_data *data = (struct hook_ptrace_data *)ri->data;
     data->iov.iov_base = 0;
     data->iov.iov_len = 0;
-    printk_debug(KERN_INFO "entry_ptrace_handler called with request: %lx, addr: %lx\n", request, addr);
+    printk_debug("entry_ptrace_handler called with request: %lx, addr: %lx\n", request, addr);
     if (request == PTRACE_GETREGSET && (addr == NT_ARM_HW_WATCH || addr == NT_ARM_HW_BREAK)) {
         unsigned long iov_user_ptr = regs->regs[3];
-        printk_debug(KERN_INFO "entry_ptrace_handler called with request: %lx, addr: %lx, iov_user_ptr: %lx\n", request, addr, iov_user_ptr);
+        printk_debug("entry_ptrace_handler called with request: %lx, addr: %lx, iov_user_ptr: %lx\n", request, addr, iov_user_ptr);
         if(!iov_user_ptr) {
             return 0;
         }
         if (x_copy_from_user(&data->iov, (struct iovec __user *)iov_user_ptr, sizeof(struct iovec)) != 0) {
-            printk_debug(KERN_INFO "Failed to copy iovec from user space\n");
+            printk_debug("Failed to copy iovec from user space\n");
             return 0;
         }
-        printk_debug(KERN_INFO "entry_ptrace_handler iov_base: %lx, iov_len %ld\n", data->iov.iov_base, data->iov.iov_len);
+        printk_debug("entry_ptrace_handler iov_base: %lx, iov_len %ld\n", data->iov.iov_base, data->iov.iov_len);
     }
     return 0;
 }
@@ -64,51 +64,51 @@ static int ret_ptrace_handler(struct kretprobe_instance *ri, struct pt_regs *reg
     struct user_hwdebug_state new_hw_state;
     size_t copy_size;
     int i = 0, y = 0;
-    printk_debug(KERN_INFO "ret_ptrace_handler called with retval: %lx, iov_base: %lx, iov_len %ld\n", retval, data->iov.iov_base, data->iov.iov_len);
+    printk_debug("ret_ptrace_handler called with retval: %lx, iov_base: %lx, iov_len %ld\n", retval, data->iov.iov_base, data->iov.iov_len);
     if (!data->iov.iov_base || !data->iov.iov_len) {
         return 0;
     }
     
     // Check if the buffer of the IoV is readable and writable
     if (!access_ok(VERIFY_READ, (void __user *)data->iov.iov_base, data->iov.iov_len)) {
-        printk_debug(KERN_INFO "User buffer is not read\n");
+        printk_debug("User buffer is not read\n");
         return 0;
     }
     if (!access_ok(VERIFY_WRITE, (void __user *)data->iov.iov_base, data->iov.iov_len)) {
-        printk_debug(KERN_INFO "User buffer is not write\n");
+        printk_debug("User buffer is not write\n");
         return 0;
     }    
     copy_size = min(data->iov.iov_len, sizeof(struct user_hwdebug_state));
     if (x_copy_from_user(&old_hw_state, (void __user *)data->iov.iov_base, copy_size) != 0) {
-        printk_debug(KERN_INFO "Failed to copy old_hw_state from user buffer\n");
+        printk_debug("Failed to copy old_hw_state from user buffer\n");
         return 0;
     }
     // After x_copy_from_user
-    printk_debug(KERN_INFO "Original old_hw_state.dbg_info: %u, size %ld\n", old_hw_state.dbg_info, copy_size);
+    printk_debug("Original old_hw_state.dbg_info: %u, size %ld\n", old_hw_state.dbg_info, copy_size);
     for (i = 0; i < 16; i++) {
-        printk_debug(KERN_INFO "Reg %d: addr=%llu, ctrl=%u\n", i, old_hw_state.dbg_regs[i].addr, old_hw_state.dbg_regs[i].ctrl);
+        printk_debug("Reg %d: addr=%llu, ctrl=%u\n", i, old_hw_state.dbg_regs[i].addr, old_hw_state.dbg_regs[i].ctrl);
     }
     // Clear the dbd_regs array
     memcpy(&new_hw_state, &old_hw_state, sizeof(new_hw_state));
     memset(new_hw_state.dbg_regs, 0x00, sizeof(new_hw_state.dbg_regs));
 
-    printk_debug(KERN_INFO "After memset:\n");
+    printk_debug("After memset:\n");
     for (i = 0; i < sizeof(old_hw_state.dbg_regs) / sizeof(old_hw_state.dbg_regs[0]); i++) {
         if(!is_my_hwbp_handle_addr(old_hw_state.dbg_regs[i].addr)) {
             memcpy(&new_hw_state.dbg_regs[y++], &old_hw_state.dbg_regs[i], sizeof(old_hw_state.dbg_regs[i]));
         }
     }
 
-    printk_debug(KERN_INFO "After memset:\n");
+    printk_debug("After memset:\n");
     for (i = 0; i < 16; i++) {
-        printk_debug(KERN_INFO "Reg %d: addr=%llu, ctrl=%u\n", i, new_hw_state.dbg_regs[i].addr, new_hw_state.dbg_regs[i].ctrl);
+        printk_debug("Reg %d: addr=%llu, ctrl=%u\n", i, new_hw_state.dbg_regs[i].addr, new_hw_state.dbg_regs[i].ctrl);
     }
 
     // Copy the modified hw_ste back to the buffer in user space
     if (x_copy_to_user((void __user *)data->iov.iov_base, &new_hw_state, copy_size) != 0) {
-        printk_debug(KERN_INFO "Failed to copy modified new_hw_state back to user buffer\n");
+        printk_debug("Failed to copy modified new_hw_state back to user buffer\n");
     } else {
-        printk_debug(KERN_INFO "Successfully cleared dbg_regs in user_hwdebug_state\n");
+        printk_debug("Successfully cleared dbg_regs in user_hwdebug_state\n");
     }
     return 0;
 }
@@ -127,15 +127,15 @@ static bool start_anti_ptrace_detection(struct mutex *p_hwbp_handle_info_mutex, 
     g_p_hwbp_handle_info_mutex = p_hwbp_handle_info_mutex;
     g_p_hwbp_handle_info_arr = p_hwbp_handle_info_arr;
     if(!g_p_hwbp_handle_info_mutex || !g_p_hwbp_handle_info_arr) {
-        printk_debug(KERN_INFO "start_anti_ptrace_detection param error\n");
+        printk_debug("start_anti_ptrace_detection param error\n");
         return false;
     }
     ret = register_kretprobe(&kretp_ptrace);
     if (ret < 0) {
-        printk_debug(KERN_INFO "register_kretprobe failed, returned %d\n", ret);
+        printk_debug("register_kretprobe failed, returned %d\n", ret);
         return false;
     }
-    printk_debug(KERN_INFO "kretprobe at %s registered, addr: %lx\n", kretp_ptrace.kp.symbol_name, kretp_ptrace.kp.addr);
+    printk_debug("kretprobe at %s registered, addr: %lx\n", kretp_ptrace.kp.symbol_name, kretp_ptrace.kp.addr);
 	return true;
 }
 
@@ -143,7 +143,7 @@ static bool start_anti_ptrace_detection(struct mutex *p_hwbp_handle_info_mutex, 
 static void stop_anti_ptrace_detection(void) {
     if(kretp_ptrace.kp.addr) {
         unregister_kretprobe(&kretp_ptrace);
-        printk_debug(KERN_INFO "kretprobe unregistered\n");
+        printk_debug("kretprobe unregistered\n");
     }
 }
 

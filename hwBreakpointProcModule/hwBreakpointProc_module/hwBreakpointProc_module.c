@@ -2,7 +2,7 @@
 #include "proc_pid.h"
 #include "api_proxy.h"
 #include "anti_ptrace_detection.h"
-
+#include "kprint.h"
 
 #pragma pack(push,1)
 struct ioctl_request {
@@ -521,14 +521,14 @@ static int hwBreakpointProc_dev_init(void) {
 	}
 #endif
 
-#ifdef DEBUG_PRINTK
-	printk(KERN_EMERG "Hello, %s debug\n", CONFIG_PROC_NODE_AUTH_KEY);
+#ifdef CONFIG_DEBUG_PRINTK
+	kp_emerg("Hello, %s debug\n", CONFIG_PROC_NODE_AUTH_KEY);
 	//test1();
 	//test2();
 	//test3();
 	//test4();
 #else
-	printk(KERN_EMERG "Hello\n");
+	kp_emerg("Hello rwProcMem33\n");
 #endif
 	return 0;
 }

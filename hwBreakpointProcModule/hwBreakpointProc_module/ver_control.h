@@ -12,7 +12,7 @@
 #define CONFIG_PROC_NODE_AUTH_KEY "dce3771681d4c7a143d5d06b7d32548e"
 
 // 调试打印模式
-//#define CONFIG_DEBUG_PRINTK
+#define CONFIG_DEBUG_PRINTK
 
 // 动态寻址模式
 #define CONFIG_KALLSYMS_LOOKUP_NAME
@@ -26,6 +26,7 @@
 #ifndef KERNEL_VERSION
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 #endif
+
 #ifndef MY_LINUX_VERSION_CODE 
 //#define MY_LINUX_VERSION_CODE KERNEL_VERSION(3,10,0)
 //#define MY_LINUX_VERSION_CODE KERNEL_VERSION(3,10,84)
@@ -50,9 +51,11 @@
 #endif
 
 #ifdef CONFIG_DEBUG_PRINTK
-#define printk_debug printk
+//#define printk_debug(fmt, ...)   printk(KP_INFO    kp_fmt(fmt), ##__VA_ARGS__)
+#define printk_debug(fmt, ...)   printk(KP_INFO    kp_fmt(fmt), ##__VA_ARGS__)
 #else
 static inline void printk_debug(char *fmt, ...) {}
 #endif
+
 
 #endif /* VER_CONTROL_H_ */

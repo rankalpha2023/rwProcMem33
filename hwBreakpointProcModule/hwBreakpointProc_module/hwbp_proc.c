@@ -27,6 +27,7 @@
 #include "cvector.h"
 #include "proc_pid.h"
 #include "api_proxy.h"
+#include "kprint.h"
 
 
 #define MAJOR_NUM 100
@@ -128,7 +129,7 @@ static void hwbp_handler(struct perf_event *bp,
 	struct pt_regs *regs) {
 	citerator iter;
 	uint64_t hook_pc;
-	printk_debug(KERN_INFO "hw_breakpoint HIT!!!!! bp:%px, pc:%px, id:%d\n", bp, regs->pc, bp->id);
+	printk_debug("hw_breakpoint HIT!!!!! bp:%px, pc:%px, id:%d\n", bp, regs->pc, bp->id);
 
 	hook_pc = atomic64_read(&g_hook_pc);
 	if(hook_pc) {
@@ -178,9 +179,9 @@ static long OnIoctlOpenProcess(unsigned long arg) {
 	if (copy_from_user(&pid, (void __user *)arg, 8)) {
 		return -EINVAL;
 	}
-	printk_debug(KERN_INFO "pid:%ld\n", pid);
+	printk_debug("pid:%ld\n", pid);
 	proc_pid_struct = get_proc_pid_struct(pid);
-	printk_debug(KERN_INFO "proc_pid_struct *:%px\n", proc_pid_struct);
+	printk_debug("proc_pid_struct *:%px\n", proc_pid_struct);
 	if (!proc_pid_struct) {
 		return -EINVAL;
 	}
@@ -197,7 +198,7 @@ static long OnIoctlCloseProcess(unsigned long arg) {
 		return -EFAULT;
 	}
 	//关闭进程句柄
-	printk_debug(KERN_INFO "proc_pid_struct *:%px\n", proc_pid_struct);
+	printk_debug("proc_pid_struct *:%px\n", proc_pid_struct);
 	release_proc_pid_struct(proc_pid_struct);
 	return 0;
 }
@@ -226,21 +227,21 @@ static long OnIoctlInstProcessHwbp(unsigned long arg) {
 	if (copy_from_user((void*)&user_data, (void*)arg, 24)) {
 		return -EFAULT;
 	}
-	printk_debug(KERN_INFO "proc_pid_struct *:%px\n", user_data.proc_pid_struct);
-	printk_debug(KERN_INFO "proc_virt_addr :%px\n", user_data.proc_virt_addr);
-	printk_debug(KERN_INFO "hwbp_len:%zu\n", user_data.hwbp_len);
-	printk_debug(KERN_INFO "hwbp_type:%d\n", user_data.hwbp_type);
+	printk_debug("proc_pid_struct *:%px\n", user_data.proc_pid_struct);
+	printk_debug("proc_virt_addr :%px\n", user_data.proc_virt_addr);
+	printk_debug("hwbp_len:%zu\n", user_data.hwbp_len);
+	printk_debug("hwbp_type:%d\n", user_data.hwbp_type);
 	pid_val = pid_nr(user_data.proc_pid_struct);
-	printk_debug(KERN_INFO "pid_val:%d\n", pid_val);
+	printk_debug("pid_val:%d\n", pid_val);
 
 	if (!pid_val) {
-		printk_debug(KERN_INFO "pid_nr failed.\n");
+		printk_debug("pid_nr failed.\n");
 		return -EINVAL;
 	}
 
 	task = pid_task(user_data.proc_pid_struct, PIDTYPE_PID);
 	if (!task) {
-		printk_debug(KERN_INFO "get_pid_task failed.\n");
+		printk_debug("get_pid_task failed.\n");
 		return -EINVAL;
 	}
 	
@@ -253,10 +254,10 @@ static long OnIoctlInstProcessHwbp(unsigned long arg) {
 	hwbp_handle_info.original_attr.disabled = 0;
 
 	hwbp_handle_info.sample_hbp = x_register_user_hw_breakpoint(&hwbp_handle_info.original_attr, hwbp_handler, NULL, task);
-	printk_debug(KERN_INFO "register_user_hw_breakpoint return: %px\n", hwbp_handle_info.sample_hbp);
+	printk_debug("register_user_hw_breakpoint return: %px\n", hwbp_handle_info.sample_hbp);
 	if (IS_ERR((void __force *)hwbp_handle_info.sample_hbp)) {
 		int ret = PTR_ERR((void __force *)hwbp_handle_info.sample_hbp);
-		printk_debug(KERN_INFO "register_user_hw_breakpoint failed: %d\n", ret);
+		printk_debug("register_user_hw_breakpoint failed: %d\n", ret);
 		return ret;
 	}
 	hwbp_handle_info.hit_item_arr = cvector_create(sizeof(struct HWBP_HIT_ITEM));
@@ -312,7 +313,7 @@ static long OnIoctlSuspendProcessHwbp(unsigned long arg) {
 		return -EFAULT;
 	}
 
-	printk_debug(KERN_INFO "sample_hbp *:%px\n", sample_hbp);
+	printk_debug("sample_hbp *:%px\n", sample_hbp);
 	if(!sample_hbp) {
 		return -EFAULT;
 	}
@@ -345,7 +346,7 @@ static long OnIoctlResumeProcessHwbp(unsigned long arg) {
 		return -EFAULT;
 	}
 
-	printk_debug(KERN_INFO "sample_hbp *:%px\n", sample_hbp);
+	printk_debug("sample_hbp *:%px\n", sample_hbp);
 	if(!sample_hbp) {
 		return -EFAULT;
 	}
@@ -382,7 +383,7 @@ static long OnIoctlGetHwbpHitCount(unsigned long arg) {
 	if (copy_from_user(&user_data.sample_hbp, (void __user *)arg, 8)) {
 		return -EFAULT;
 	}
-	printk_debug(KERN_INFO "sample_hbp *:%px\n", user_data.sample_hbp);
+	printk_debug("sample_hbp *:%px\n", user_data.sample_hbp);
 
 	mutex_lock(&g_hwbp_handle_info_mutex);
 	for (iter = cvector_begin(g_hwbp_handle_info_arr); iter != cvector_end(g_hwbp_handle_info_arr); iter = cvector_next(g_hwbp_handle_info_arr, iter)) {
@@ -396,7 +397,7 @@ static long OnIoctlGetHwbpHitCount(unsigned long arg) {
 
 	mutex_unlock(&g_hwbp_handle_info_mutex);
 	
-	printk_debug(KERN_INFO "user_data.hit_total_count:%zu\n", user_data.hit_total_count);
+	printk_debug("user_data.hit_total_count:%zu\n", user_data.hit_total_count);
 	if (copy_to_user((void*)arg, &user_data, 24)) {
 		return -EINVAL;
 	}
@@ -423,7 +424,7 @@ static ssize_t hwBreakpointProc_read(struct file* filp, char __user* buf, size_t
 	if (copy_from_user((void*)&sample_hbp, buf, 8)) {
 		return -EFAULT;
 	}
-	printk_debug(KERN_INFO "sample_hbp *:%ld\n", sample_hbp);
+	printk_debug("sample_hbp *:%ld\n", sample_hbp);
 
 	copy_pos = (size_t)buf;
 	end_pos = (size_t)((size_t)buf + size);
@@ -454,34 +455,34 @@ static ssize_t hwBreakpointProc_read(struct file* filp, char __user* buf, size_t
 static inline long DispatchCommand(unsigned int cmd, unsigned long arg) {
 	switch (cmd) {
 	case IOCTL_HWBP_OPEN_PROCESS: //打开进程
-		printk_debug(KERN_INFO "IOCTL_HWBP_OPEN_PROCESS\n");
+		printk_debug("IOCTL_HWBP_OPEN_PROCESS\n");
 		return OnIoctlOpenProcess(arg);
 	case IOCTL_HWBP_CLOSE_HANDLE: //关闭进程
-		printk_debug(KERN_INFO "IOCTL_HWBP_CLOSE_HANDLE\n");
+		printk_debug("IOCTL_HWBP_CLOSE_HANDLE\n");
 		return OnIoctlCloseProcess(arg);
 	case IOCTL_HWBP_GET_NUM_BRPS: //获取CPU支持硬件执行断点的数量
-		printk_debug(KERN_INFO "IOCTL_HWBP_GET_NUM_BRPS\n");
+		printk_debug("IOCTL_HWBP_GET_NUM_BRPS\n");
 		return OnIoctlGetCpuNumBrps();
 	case IOCTL_HWBP_GET_NUM_WRPS: //获取CPU支持硬件访问断点的数量
-		printk_debug(KERN_INFO "IOCTL_HWBP_GET_NUM_WRPS\n");
+		printk_debug("IOCTL_HWBP_GET_NUM_WRPS\n");
 		return OnIoctlGetCpuNumWrps();
 	case IOCTL_HWBP_INST_PROCESS_HWBP: //设置进程硬件断点
-		printk_debug(KERN_INFO "IOCTL_HWBP_INST_PROCESS_HWBP\n");
+		printk_debug("IOCTL_HWBP_INST_PROCESS_HWBP\n");
 		return OnIoctlInstProcessHwbp(arg);
 	case IOCTL_HWBP_UNINST_PROCESS_HWBP: //删除进程硬件断点
-		printk_debug(KERN_INFO "IOCTL_HWBP_UNINST_PROCESS_HWBP\n");
+		printk_debug("IOCTL_HWBP_UNINST_PROCESS_HWBP\n");
 		return OnIoctlUninstProcessHwbp(arg);
 	case IOCTL_HWBP_SUSPEND_PROCESS_HWBP: //暂停进程硬件断点
-		printk_debug(KERN_INFO "IOCTL_HWBP_SUSPEND_PROCESS_HWBP\n");
+		printk_debug("IOCTL_HWBP_SUSPEND_PROCESS_HWBP\n");
 		return OnIoctlSuspendProcessHwbp(arg);
 	case IOCTL_HWBP_RESUME_PROCESS_HWBP: //恢复进程硬件断点
-		printk_debug(KERN_INFO "IOCTL_HWBP_RESUME_PROCESS_HWBP\n");
+		printk_debug("IOCTL_HWBP_RESUME_PROCESS_HWBP\n");
 		return OnIoctlResumeProcessHwbp(arg);
 	case IOCTL_HWBP_GET_HWBP_HIT_COUNT: //获取硬件断点命中地址数量
-		printk_debug(KERN_INFO "IOCTL_HWBP_GET_HWBP_HIT_COUNT\n");
+		printk_debug("IOCTL_HWBP_GET_HWBP_HIT_COUNT\n");
 		return OnIoctlGetHwbpHitCount(arg);
 	case IOCTL_HWBP_SET_HOOK_PC:
-		printk_debug(KERN_INFO "IOCTL_HWBP_SET_HOOK_PC\n");
+		printk_debug("IOCTL_HWBP_SET_HOOK_PC\n");
 		return OnIoctlSetHookPc(arg);
 	default:
 		return -EINVAL;
@@ -596,14 +597,14 @@ int __init hwBreakpointProc_dev_init(void) {
 
 #ifdef CONFIG_KALLSYMS_LOOKUP_NAME
 	if(!init_kallsyms_lookup()) {
-		printk(KERN_EMERG "init_kallsyms_lookup failed\n");
+		kp_emerg("init_kallsyms_lookup failed\n");
 		return -EBADF;
 	}
 #endif
 
 	g_hwbp_handle_info_arr = cvector_create(sizeof(struct HWBP_HANDLE_INFO));
 	if(!g_hwbp_handle_info_arr) {
-		printk(KERN_EMERG "cvector_create failed\n");
+		kp_emerg("cvector_create failed\n");
 		return -ENOMEM;
 	}
 
@@ -617,7 +618,7 @@ int __init hwBreakpointProc_dev_init(void) {
 	g_hwBreakpointProc_major = MAJOR(g_hwBreakpointProc_devno);
 
 	if (result < 0) {
-		printk(KERN_EMERG "hwBreakpointProc alloc_chrdev_region failed %d\n", result);
+		kp_emerg("hwBreakpointProc alloc_chrdev_region failed %d\n", result);
 		return result;
 	}
 
@@ -634,7 +635,7 @@ int __init hwBreakpointProc_dev_init(void) {
 	g_hwBreakpointProc_devp->pcdev->ops = &hwBreakpointProc_fops;
 	err = cdev_add(g_hwBreakpointProc_devp->pcdev, g_hwBreakpointProc_devno, 1);
 	if (err) {
-		printk(KERN_EMERG "Error in cdev_add()\n");
+		kp_emerg("Error in cdev_add()\n");
 		result = -EFAULT;
 		goto _fail;
 	}
@@ -642,10 +643,10 @@ int __init hwBreakpointProc_dev_init(void) {
 	g_Class_devp = class_create(THIS_MODULE, DEV_FILENAME);
 	device_create(g_Class_devp, NULL, g_hwBreakpointProc_devno, NULL, "%s", DEV_FILENAME);
 
-#ifdef DEBUG_PRINTK
-	printk(KERN_EMERG "Hello, %s debug\n", DEV_FILENAME);
+#ifdef CONFIG_DEBUG_PRINTK
+	kp_emerg("Hello, %s debug\n", DEV_FILENAME);
 #else
-	printk(KERN_EMERG "Hello, %s\n", DEV_FILENAME);
+	kp_emerg("Hello, %s\n", DEV_FILENAME);
 #endif
 	return 0;
 
@@ -674,21 +675,21 @@ void __exit hwBreakpointProc_dev_exit(void) {
 	kfree(g_hwBreakpointProc_devp->pcdev);
 	kfree(g_hwBreakpointProc_devp);
 	unregister_chrdev_region(g_hwBreakpointProc_devno, 1);
-	printk(KERN_EMERG "Goodbye, %s\n", DEV_FILENAME);
+	kp_emerg("Goodbye, %s\n", DEV_FILENAME);
 }
 
 #ifndef CONFIG_MODULE_GUIDE_ENTRY
 //Hook:__cfi_check_fn
 unsigned char* __check_(unsigned char* result, void *ptr, void *diag)
 {
-	printk_debug(KERN_EMERG "my__cfi_check_fn!!!\n");
+	kp_emerg("my__cfi_check_fn!!!\n");
 	return result;
 }
 
 //Hook:__cfi_check_fail
 unsigned char * __check_fail_(unsigned char *result)
 {
-	printk_debug(KERN_EMERG "my__cfi_check_fail!!!\n");
+	kp_emerg("my__cfi_check_fail!!!\n");
 	return result;
 }
 #endif

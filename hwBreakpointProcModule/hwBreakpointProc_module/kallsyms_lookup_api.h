@@ -1,6 +1,7 @@
 #ifndef _KALLSYMS_LOOKUP_API_H_
 #define _KALLSYMS_LOOKUP_API_H_
 #include "ver_control.h"
+#include "kprint.h"
 #include <linux/types.h>
 #include <linux/errno.h>
 #include <linux/uaccess.h>
@@ -28,7 +29,7 @@ static unsigned long get_kallsyms_func(void) {
 	ret = register_kprobe(&probe);
 	if (ret == 0) {
 		addr = (unsigned long)probe.addr;
-		printk_debug(KERN_EMERG "get_kallsyms_func(kallsyms_lookup_name):%px\n", addr);
+		kp_emerg("get_kallsyms_func(kallsyms_lookup_name):%px\n", addr);
 		unregister_kprobe(&probe);
 	}
 	return addr;
@@ -37,7 +38,7 @@ static unsigned long get_kallsyms_func(void) {
 static unsigned long generic_kallsyms_lookup_name(const char *name) {
 	if (!kallsyms_lookup_name_sym) {
 			kallsyms_lookup_name_sym = (void *)get_kallsyms_func();
-			printk_debug(KERN_EMERG "get_kallsyms_func:%px\n", kallsyms_lookup_name_sym);
+			kp_emerg("get_kallsyms_func:%px\n", kallsyms_lookup_name_sym);
 			if(!kallsyms_lookup_name_sym)
 					return 0;
 	}
@@ -46,16 +47,16 @@ static unsigned long generic_kallsyms_lookup_name(const char *name) {
 
 static bool init_kallsyms_lookup(void) {
 	register_user_hw_breakpoint_sym = (void *)generic_kallsyms_lookup_name("register_user_hw_breakpoint");
-	printk_debug(KERN_EMERG "register_user_hw_breakpoint_sym:%px\n", register_user_hw_breakpoint_sym);
+	kp_emerg("register_user_hw_breakpoint_sym:%px\n", register_user_hw_breakpoint_sym);
 	if(!register_user_hw_breakpoint_sym) { return false; }
 
 	unregister_hw_breakpoint_sym = (void *)generic_kallsyms_lookup_name("unregister_hw_breakpoint");
-	printk_debug(KERN_EMERG "unregister_hw_breakpoint_sym:%px\n", unregister_hw_breakpoint_sym);
+	kp_emerg("unregister_hw_breakpoint_sym:%px\n", unregister_hw_breakpoint_sym);
 	if(!unregister_hw_breakpoint_sym) { return false; }
 
 #ifdef CONFIG_MODIFY_HIT_NEXT_MODE
 	modify_user_hw_breakpoint_sym = (void *)generic_kallsyms_lookup_name("modify_user_hw_breakpoint");
-	printk_debug(KERN_EMERG "modify_user_hw_breakpoint_sym:%px\n", modify_user_hw_breakpoint_sym);
+	kp_emerg("modify_user_hw_breakpoint_sym:%px\n", modify_user_hw_breakpoint_sym);
 	if(!modify_user_hw_breakpoint_sym) { return false; }
 #endif
 
