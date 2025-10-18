@@ -7,6 +7,7 @@
 
 // 生成proc用户层交互节点文件
 #define CONFIG_USE_PROC_FILE_NODE
+
 // 隐蔽通信密钥
 #define CONFIG_PROC_NODE_AUTH_KEY "dce3771681d4c7a143d5d06b7d32548e"
 
@@ -20,7 +21,7 @@
 #define CONFIG_MODIFY_HIT_NEXT_MODE
 
 // 反PTRACE侦测模式
-#define CONFIG_ANTI_PTRACE_DETECTION_MODE
+//#define CONFIG_ANTI_PTRACE_DETECTION_MODE
 
 #ifndef KERNEL_VERSION
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
